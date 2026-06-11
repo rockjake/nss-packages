@@ -26,7 +26,7 @@ Subject: [PATCH] treewide: rework notifier changes for 5.15
  	struct nf_conn *ct = item->ct;
  
  	/*
-@@ -387,23 +380,17 @@ static int ecm_conntrack_event(unsigned
+@@ -387,24 +380,14 @@ static int ecm_conntrack_event(unsigned
  	return NOTIFY_DONE;
  }
  
@@ -45,43 +45,33 @@ Subject: [PATCH] treewide: rework notifier changes for 5.15
   */
  static struct nf_ct_event_notifier ecm_conntrack_notifier = {
 -	.fcn	= ecm_conntrack_event,
--};
-+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
-+    .fcn	= ecm_conntrack_event,
-+#else
 +    .ct_event	= ecm_conntrack_event,
+ };
  #endif
-+};
- #endif
+-#endif
  
  /*
-@@ -440,12 +427,16 @@ int ecm_conntrack_notifier_init(struct d
+  * ecm_conntrack_notifier_stop()
+@@ -440,12 +423,7 @@ int ecm_conntrack_notifier_init(struct d
  	/*
  	 * Eventing subsystem is available so we register a notifier hook to get fast notifications of expired connections
  	 */
 -	result = nf_conntrack_register_notifier(&init_net, &ecm_conntrack_notifier);
-+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
-+   result = nf_conntrack_register_notifier(&init_net, &ecm_conntrack_notifier);
- 	if (result < 0) {
- 		DEBUG_ERROR("Can't register nf notifier hook.\n");
- 		debugfs_remove_recursive(ecm_conntrack_notifier_dentry);
- 		return result;
- 	}
-+#else
+-	if (result < 0) {
+-		DEBUG_ERROR("Can't register nf notifier hook.\n");
+-		debugfs_remove_recursive(ecm_conntrack_notifier_dentry);
+-		return result;
+-	}
 +   nf_conntrack_register_notifier(&init_net, &ecm_conntrack_notifier);
-+#endif
  
  	/*
  	 * Hold netns reference to keep the basic conntrack alive and
-@@ -487,7 +478,11 @@ void ecm_conntrack_notifier_exit(void)
+@@ -487,7 +465,7 @@ void ecm_conntrack_notifier_exit(void)
  #ifdef ECM_IPV6_ENABLE
  	nf_ct_netns_put(&init_net, NFPROTO_IPV6);
  #endif
-+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
- 	nf_conntrack_unregister_notifier(&init_net, &ecm_conntrack_notifier);
-+#else
+-	nf_conntrack_unregister_notifier(&init_net, &ecm_conntrack_notifier);
 +   nf_conntrack_unregister_notifier(&init_net);
-+#endif
  #endif
  	/*
  	 * Remove the debugfs files recursively.

@@ -73,7 +73,7 @@ void AQ_API_MDIO_Write(
 	 * and send the ioctl to kernel.
 	 */
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, devname, sizeof(ifr.ifr_name));
+	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", devname);
 	memset(&mii, 0, sizeof(mii));
 	memcpy(&mii, &ifr.ifr_data, sizeof(mii));
 	mii.phy_id = MII_ADDR_C45 | PHY_ID << 5 | MMD;
@@ -109,7 +109,7 @@ unsigned int AQ_API_MDIO_Read
 	 * and send the ioctl to kernel.
 	 */
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, devname, sizeof(ifr.ifr_name));
+	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", devname);
 	memset(&mii, 0, sizeof(mii));
 	memcpy(&mii, &ifr.ifr_data, sizeof(mii));
 	mii.phy_id = MII_ADDR_C45 | PHY_ID << 5 | MMD;

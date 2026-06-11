@@ -51,7 +51,7 @@
  err_register_irq:
 --- a/nss_core.h
 +++ b/nss_core.h
-@@ -1082,4 +1082,6 @@ extern nss_tx_status_t nss_n2h_cfg_empty
+@@ -1078,4 +1078,6 @@ extern nss_tx_status_t nss_n2h_cfg_empty
  extern nss_tx_status_t nss_n2h_paged_buf_pool_init(struct nss_ctx_instance *nss_ctx);
  extern nss_tx_status_t nss_n2h_cfg_qos_mem_size(struct nss_ctx_instance *nss_ctx, uint32_t pool_sz);
  

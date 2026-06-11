@@ -1,26 +1,19 @@
 --- a/nss_core.h
 +++ b/nss_core.h
-@@ -467,7 +467,11 @@ struct nss_ctx_instance {
+@@ -463,7 +463,7 @@ struct nss_ctx_instance {
  	struct nss_top_instance *nss_top;
  					/* Back pointer to NSS Top */
  	struct device *dev;		/* Pointer to the original device from probe */
-+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 14, 0))
- 	struct net_device napi_ndev;    /* Dummy_netdev for NAPI */
-+#else
+-	struct net_device napi_ndev;    /* Dummy_netdev for NAPI */
 +	struct net_device *napi_ndev;   /* Dummy_netdev for NAPI */
-+#endif
  	uint32_t id;			/* Core ID for this instance */
  	void __iomem *nmap;		/* Pointer to NSS CSM registers */
  	void __iomem *vmap;		/* Virt mem pointer to virtual register map */
-@@ -518,6 +522,12 @@ struct nss_ctx_instance {
+@@ -514,6 +514,8 @@ struct nss_ctx_instance {
  					/* Magic protection */
  };
  
-+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 14, 0))
-+#define NSS_CTX_NAPI_NDEV(ctx) (&(ctx)->napi_ndev)
-+#else
 +#define NSS_CTX_NAPI_NDEV(ctx) ((ctx)->napi_ndev)
-+#endif
 +
  /*
   * NSS stats read context
@@ -96,17 +89,14 @@
  	err = request_irq(irq, nss_hal_handle_irq, 0, irq_name, int_ctx);
 --- a/nss_hal/nss_hal.c
 +++ b/nss_hal/nss_hal.c
-@@ -360,10 +360,16 @@ int nss_hal_probe(struct platform_device
+@@ -360,10 +360,12 @@ int nss_hal_probe(struct platform_device
  	/*
  	 * Initialize the dummy netdevice.
  	 */
-+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 14, 0))
- 	init_dummy_netdev(&nss_ctx->napi_ndev);
-+#else
+-	init_dummy_netdev(&nss_ctx->napi_ndev);
 +	nss_ctx->napi_ndev = alloc_netdev_dummy(0);
 +	if (!nss_ctx->napi_ndev)
 +		goto err_init;
-+#endif
  
  	for (i = 0; i < npd->num_irq; i++) {
 -		err = nss_hal_register_irq(nss_ctx, npd, &nss_ctx->napi_ndev, i);
@@ -114,26 +104,22 @@
  		if (err) {
  			goto err_register_irq;
  		}
-@@ -858,6 +864,11 @@ err_register_irq:
+@@ -858,6 +860,9 @@ err_register_irq:
  		nss_hal_clean_up_irq(&nss_ctx->int_ctx[i]);
  	}
  
-+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 14, 0))
 +	free_netdev(nss_ctx->napi_ndev);
 +	nss_ctx->napi_ndev = NULL;
-+#endif
 +
  err_init:
  	if (nss_dev->dev.of_node) {
  		if (npd->nmap) {
-@@ -900,6 +911,11 @@ int nss_hal_remove(struct platform_devic
+@@ -900,6 +905,9 @@ int nss_hal_remove(struct platform_devic
  		nss_hal_clean_up_irq(&nss_ctx->int_ctx[i]);
  	}
  
-+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 14, 0))
 +	free_netdev(nss_ctx->napi_ndev);
 +	nss_ctx->napi_ndev = NULL;
-+#endif
 +
  	/*
  	 * nss-drv is exiting, unregister and restore host data plane

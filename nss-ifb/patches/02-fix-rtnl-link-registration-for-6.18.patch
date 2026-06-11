@@ -38,3 +38,9 @@
  
  	if (!err)
  		pr_info("NSS IFB module loaded.\n");
+@@ -301,4 +298,5 @@ static void __exit nss_ifb_cleanup_modul
+ module_init(nss_ifb_init_module);
+ module_exit(nss_ifb_cleanup_module);
+ MODULE_LICENSE("GPL");
++MODULE_INFO(description, "NSS IFB Interface");
+ MODULE_ALIAS_RTNL_LINK("nss_ifb");

@@ -14,17 +14,15 @@
  ccflags-$(ECM_256M_PROFILE) += -DECM_256M_PROFILE
 --- a/ecm_interface.c
 +++ b/ecm_interface.c
-@@ -9715,7 +9715,9 @@ static struct ctl_table ecm_interface_ta
+@@ -9715,7 +9715,6 @@ static struct ctl_table ecm_interface_ta
  		.mode			= 0644,
  		.proc_handler		= &ecm_interface_mwan3_enable_handler,
  	},
-+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
- 	{ }
-+#endif
+-	{ }
  };
  
  #ifdef ECM_INTERFACE_IPSEC_GLUE_LAYER_SUPPORT_ENABLE
-@@ -10238,7 +10240,9 @@ int ecm_interface_init(void)
+@@ -10238,7 +10237,9 @@ int ecm_interface_init(void)
  #ifdef ECM_INTERFACE_OVS_BRIDGE_ENABLE
  	ovsmgr_notifier_register(&ecm_interface_ovs_notifier);
  #endif
@@ -34,7 +32,7 @@
  
  	return 0;
  }
-@@ -10270,7 +10274,9 @@ void ecm_interface_exit(void)
+@@ -10270,7 +10271,9 @@ void ecm_interface_exit(void)
  		br_fdb_unregister_notify(&ecm_interface_node_br_fdb_delete_nb);
  	}
  #endif
@@ -46,37 +44,31 @@
  	ovsmgr_notifier_unregister(&ecm_interface_ovs_notifier);
 --- a/ecm_tracker_udp.c
 +++ b/ecm_tracker_udp.c
-@@ -1219,7 +1219,9 @@ static struct ctl_table ecm_tracker_udp_
+@@ -1219,7 +1219,6 @@ static struct ctl_table ecm_tracker_udp_
  		.mode		= 0644,
  		.proc_handler	= &ecm_tracker_udp_rtp_payload_types_handler,
  	},
-+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
- 	{}
-+#endif
+-	{}
  };
  
  /*
 --- a/frontends/ecm_front_end_common.c
 +++ b/frontends/ecm_front_end_common.c
-@@ -1233,7 +1233,9 @@ static struct ctl_table ecm_front_end_sy
+@@ -1233,7 +1233,6 @@ static struct ctl_table ecm_front_end_sy
  		.mode		= 0644,
  		.proc_handler	= &ecm_front_end_tcp_denied_ports_handler,
  	},
-+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
- 	{}
-+#endif
+-	{}
  };
  
  /*
 --- a/frontends/sfe/ecm_sfe_common.c
 +++ b/frontends/sfe/ecm_sfe_common.c
-@@ -537,7 +537,9 @@ static struct ctl_table ecm_sfe_sysctl_t
+@@ -537,7 +537,6 @@ static struct ctl_table ecm_sfe_sysctl_t
  		.mode		= 0644,
  		.proc_handler	= &ecm_sfe_tun_fast_xmit_enable_handler,
  	},
-+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
- 	{}
-+#endif
+-	{}
  };
  
  /*

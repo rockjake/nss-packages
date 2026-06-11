@@ -84,7 +84,7 @@
  	struct kvec iov = {0};
 --- a/mc_snooping.c
 +++ b/mc_snooping.c
-@@ -649,7 +649,7 @@ static void mc_mdb_destroy(struct mc_mdb
+@@ -645,7 +645,7 @@ static void mc_mdb_destroy(struct mc_mdb
  	}
  
  	hlist_del_rcu(&mdb->hlist);
@@ -93,7 +93,7 @@
  
  	if (mdb->flood_ifcnt || mdb->encap_dev_cnt) {
  		mdb->flood_ifcnt = 0;
-@@ -681,7 +681,7 @@ static void mc_agingtimer_reset(struct m
+@@ -677,7 +677,7 @@ static void mc_agingtimer_reset(struct m
  
  	if (timer_pending(&mc->agingtimer) ?
  			time_after(mc->agingtimer.expires, jiffies + expires) :
@@ -102,7 +102,7 @@
  		mod_timer(&mc->agingtimer, jiffies + expires);
  		MC_PRINT("Reset Group Membership Interval ageing timer, expires = %u\n",
  				jiffies_to_msecs(expires) / 1000);
-@@ -709,7 +709,7 @@ static void mc_rtimer_reset(struct mc_st
+@@ -705,7 +705,7 @@ static void mc_rtimer_reset(struct mc_st
  
  	if (timer_pending(&mc->rtimer) ?
  			time_after(mc->rtimer.expires, jiffies + expires) :
@@ -111,16 +111,38 @@
  		mod_timer(&mc->rtimer, jiffies + expires);
  		MC_PRINT("Reset Querier Interval ageing timer, expires = %u\n",
  				jiffies_to_msecs(expires) / 1000);
-@@ -726,7 +726,7 @@ static void mc_mdb_expired(unsigned long
- #endif
+@@ -715,17 +715,9 @@ static void mc_rtimer_reset(struct mc_st
+ /* mc_mdb_expired
+  *	mdb expired
+  */
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+ static void mc_mdb_expired(struct timer_list *tl)
+-#else
+-static void mc_mdb_expired(unsigned long data)
+-#endif
  {
- #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
 -	struct mc_mdb_entry *mdb = from_timer(mdb, tl, etimer);
-+	struct mc_mdb_entry *mdb = container_of(tl, typeof(*mdb), etimer);
- #else
- 	struct mc_mdb_entry *mdb = (struct mc_mdb_entry *)data;
- #endif
-@@ -1219,7 +1219,7 @@ static void mc_leave_group(struct mc_str
+-#else
+-	struct mc_mdb_entry *mdb = (struct mc_mdb_entry *)data;
+-#endif
++	struct mc_mdb_entry *mdb = timer_container_of(mdb, tl, etimer);
+ 	struct mc_struct *mc = mdb->mc;
+ 	struct mc_port_group *pg;
+ 	struct hlist_node *pgh;
+@@ -759,11 +751,7 @@ static struct mc_mdb_entry *mc_mdb_creat
+ 		mdb->group = *group;
+ 		mdb->mc = mc;
+ 		mdb->ageing_query = jiffies;
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+ 		timer_setup(&mdb->etimer, mc_mdb_expired, 0);
+-#else
+-		setup_timer(&mdb->etimer, mc_mdb_expired, (unsigned long)mdb);
+-#endif
+ 		hlist_add_head_rcu(&mdb->hlist, head);
+ 	} else {
+ 		MC_PRINT("%s: No memory\n", __func__);
+@@ -1215,7 +1203,7 @@ static void mc_leave_group(struct mc_str
  	fg->ageing_timer = now - expire_time + expire_delay;
  	if (timer_pending(&mc->agingtimer) ?
  		time_after(mc->agingtimer.expires, jiffies + expire_delay) :
@@ -129,7 +151,7 @@
  		mod_timer(&mc->agingtimer, jiffies + expire_delay);
  		MC_PRINT("Reset Group Membership Interval ageing timer, expires = %u ms\n",
  			leave_delay_msecond);
-@@ -2086,7 +2086,7 @@ static void mc_query_cycle_start(struct
+@@ -2082,7 +2070,7 @@ static void mc_query_cycle_start(struct
  			goto out;
  		if (timer_pending(&mdb->etimer) ?
  				time_after(mdb->etimer.expires, now + root_qe->max_resp_time) :
@@ -138,7 +160,7 @@
  			mdb->timer_base = now;
  			mod_timer(&mdb->etimer, now + root_qe->max_resp_time);
  			mc_query_timer_dump(mdb, root_qe->max_resp_time, 1);
-@@ -2101,7 +2101,7 @@ static void mc_query_cycle_start(struct
+@@ -2097,7 +2085,7 @@ static void mc_query_cycle_start(struct
  					continue;
  				if (timer_pending(&mdb->etimer) ?
  						time_after(mdb->etimer.expires, now + root_qe->max_resp_time) :
@@ -147,7 +169,7 @@
  					mdb->timer_base = now;
  					mod_timer(&mdb->etimer, now + root_qe->max_resp_time);
  					mc_query_timer_dump(mdb, root_qe->max_resp_time, 0);
-@@ -2952,10 +2952,10 @@ static int mc_stop(struct mc_struct *mc)
+@@ -2948,10 +2936,10 @@ static int mc_stop(struct mc_struct *mc)
  	mc_mdb_flush(mc);
  	mc_rlist_flush(mc);
  
@@ -162,39 +184,111 @@
  
  	return 0;
  }
-@@ -2981,7 +2981,7 @@ static void mc_router_cleanup(unsigned l
+@@ -2969,18 +2957,10 @@ static void mc_dev_rcu_free(struct rcu_h
+ 	kfree(mc);
+ }
+ 
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+ static void mc_router_cleanup(struct timer_list *tl)
+-#else
+-static void mc_router_cleanup(unsigned long data)
+-#endif
  {
  	int delay_reset = 0;
- #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
 -	struct mc_struct *mc = from_timer(mc, tl, rtimer);
-+	struct mc_struct *mc = container_of(tl, typeof(*mc), rtimer);
- #else
- 	struct mc_struct *mc = (struct mc_struct *)data;
- #endif
-@@ -3036,7 +3036,7 @@ static void mc_mdb_query(unsigned long d
+-#else
+-	struct mc_struct *mc = (struct mc_struct *)data;
+-#endif
++	struct mc_struct *mc = timer_container_of(mc, tl, rtimer);
+ 	unsigned long next_timer = jiffies + mc->querier_interval;
+ 	struct hlist_node *h;
+ 	struct mc_querier_entry *qe;
+@@ -3024,18 +3004,10 @@ static void mc_router_cleanup(unsigned l
+ 	spin_unlock_bh(&mc->lock);
+ }
+ 
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+ static void mc_mdb_query(struct timer_list *tl)
+-#else
+-static void mc_mdb_query(unsigned long data)
+-#endif
  {
  	int i;
- #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
 -	struct mc_struct *mc = from_timer(mc, tl, qtimer);
-+	struct mc_struct *mc = container_of(tl, typeof(*mc), qtimer);
- #else
- 	struct mc_struct *mc = (struct mc_struct *)data;
- #endif
-@@ -3091,7 +3091,7 @@ static void mc_mdb_cleanup(unsigned long
+-#else
+-	struct mc_struct *mc = (struct mc_struct *)data;
+-#endif
++	struct mc_struct *mc = timer_container_of(mc, tl, qtimer);
+ 	unsigned long next_timer = jiffies + mc->local_query_interval;
+ 
+ 	if (mc->timeout_gmi_enable)
+@@ -3079,18 +3051,10 @@ out:
+ /* mc_mdb_cleanup
+  *	clean up a mdb
+  */
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+ static void mc_mdb_cleanup(struct timer_list *tl)
+-#else
+-static void mc_mdb_cleanup(unsigned long data)
+-#endif
  {
  	int i;
- #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
 -	struct mc_struct *mc = from_timer(mc, tl, agingtimer);
-+	struct mc_struct *mc = container_of(tl, typeof(*mc), agingtimer);
- #else
- 	struct mc_struct *mc = (struct mc_struct *)data;
- #endif
-@@ -3268,7 +3268,7 @@ static void mc_event_delay(unsigned long
- #endif
+-#else
+-	struct mc_struct *mc = (struct mc_struct *)data;
+-#endif
++	struct mc_struct *mc = timer_container_of(mc, tl, agingtimer);
+ 	struct mc_querier_entry *igmp_root_qe = mc->rp.igmp_root_qe;
+ 	unsigned long next_timer, now = jiffies;
+ 	unsigned long igmp_expire_time = mc->membership_interval;
+@@ -3257,19 +3221,11 @@ static void mc_acl_table_init(struct mc_
+ /* mc_event_delay
+  *	send a event out
+  */
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+ static void mc_event_delay(struct timer_list *tl)
+-#else
+-static void mc_event_delay(unsigned long data)
+-#endif
  {
- #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
 -	struct mc_struct *mc = from_timer(mc, tl, evtimer);
-+	struct mc_struct *mc = container_of(tl, typeof(*mc), evtimer);
++	struct mc_struct *mc = timer_container_of(mc, tl, evtimer);
  
  	mc_netlink_event_send(mc, MC_EVENT_MDB_UPDATED,	0, NULL);
- #else
+-#else
+-	mc_netlink_event_send((struct mc_struct *)data, MC_EVENT_MDB_UPDATED,	0, NULL);
+-#endif
+ }
+ 
+ /* mc_attach
+@@ -3322,17 +3278,10 @@ int mc_attach(struct net_device *dev)
+ 	mc->rp.type = MC_RTPORT_DEFAULT;/* If querier exist, forward IGMP/MLD message to the router port, else flood to all ports. */
+ 
+ 	mc_acl_table_init(mc);
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+ 	timer_setup(&mc->qtimer, mc_mdb_query, 0);
+ 	timer_setup(&mc->agingtimer, mc_mdb_cleanup, 0);
+ 	timer_setup(&mc->rtimer, mc_router_cleanup, 0);
+ 	timer_setup(&mc->evtimer, mc_event_delay, 0);
+-#else
+-	setup_timer(&mc->qtimer, mc_mdb_query, (unsigned long) mc);
+-	setup_timer(&mc->agingtimer, mc_mdb_cleanup, (unsigned long) mc);
+-	setup_timer(&mc->rtimer, mc_router_cleanup, (unsigned long) mc);
+-	setup_timer(&mc->evtimer, mc_event_delay, (unsigned long) mc);
+-#endif
+ 	/*Make the mc ready before publishing it*/
+ 	if (mc_open(mc) < 0) {
+ 		kfree(mc);
+--- a/mc_main.c
++++ b/mc_main.c
+@@ -77,5 +77,6 @@ static void __exit mc_exit(void)
+ 
+ module_init(mc_init);
+ module_exit(mc_exit);
++MODULE_INFO(description, "QCA multicast snooping");
+ MODULE_LICENSE("GPL v2");
+ 

@@ -304,7 +304,7 @@
   * nss_clmap_log_message_types_str
 --- a/nss_core.c
 +++ b/nss_core.c
-@@ -389,7 +389,7 @@ void nss_core_unregister_subsys_dp(struc
+@@ -387,7 +387,7 @@ void nss_core_unregister_subsys_dp(struc
   * nss_core_handle_nss_status_pkt()
   *	Handle the metadata/status packet.
   */
@@ -313,7 +313,7 @@
  {
  	struct nss_cmn_msg *ncm;
  	uint32_t expected_version = NSS_HLOS_MESSAGE_VERSION;
-@@ -2759,7 +2759,7 @@ static inline bool nss_core_skb_can_reus
+@@ -2757,7 +2757,7 @@ static inline bool nss_core_skb_can_reus
   * NOTE: This function does any necessary reference count dropping, and
   * cleans up the skbuff as if its allocated fresh.
   */
@@ -617,7 +617,7 @@
   * nss_if_log_message_types_str
 --- a/nss_init.c
 +++ b/nss_init.c
-@@ -143,6 +143,7 @@ struct of_device_id nss_dt_ids[] = {
+@@ -136,6 +136,7 @@ struct of_device_id nss_dt_ids[] = {
  	{ .compatible = "qcom,nss" },
  	{ .compatible = "qcom,nss0" },
  	{ .compatible = "qcom,nss1" },
@@ -888,8 +888,8 @@
   * nss_pppoe_br_accel_mode_handler()
   *	Enable/disable pppoe bridge acceleration in NSS
   */
--int nss_pppoe_br_accel_mode_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_pppoe_br_accel_mode_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
+-int nss_pppoe_br_accel_mode_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_pppoe_br_accel_mode_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_ctx_instance *nss_ctx = nss_pppoe_get_context();
  	struct nss_pppoe_msg npm;

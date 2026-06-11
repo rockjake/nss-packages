@@ -26,20 +26,20 @@ define KernelPackage/qca-nss-ecm
   CATEGORY:=Kernel modules
   SUBMENU:=Network Support
   DEPENDS:=@TARGET_qualcommax \
-		   +ethtool \
-		   +kmod-nf-conntrack \
-		   +@NSS_DRV_IPV6_ENABLE \
-		   +@NSS_DRV_VIRT_IF_ENABLE \
-		   +@(PACKAGE_kmod-pppoe):NSS_DRV_PPPOE_ENABLE \
-		   +PACKAGE_kmod-qca-nss-drv:kmod-qca-nss-drv \
-		   +PACKAGE_kmod-qca-mcs:kmod-qca-mcs \
-		   +PACKAGE_kmod-bonding:kmod-bonding \
-		   +PACKAGE_kmod-vxlan:kmod-vxlan \
-		   +PACKAGE_kmod-nat46:kmod-nat46 \
-		   +PACKAGE_kmod-ppp:kmod-ppp \
-		   +PACKAGE_kmod-pppoe:kmod-pppoe \
-		   +PACKAGE_kmod-pppoe:kmod-pptp \
-		   +PACKAGE_kmod-pppoe:kmod-pppol2tp
+		+ethtool \
+		+kmod-nf-conntrack \
+		+kmod-qca-nss-drv \
+		+@NSS_DRV_IPV6_ENABLE \
+		+@NSS_DRV_VIRT_IF_ENABLE \
+		+@(PACKAGE_kmod-pppoe):NSS_DRV_PPPOE_ENABLE \
+		+PACKAGE_kmod-qca-mcs:kmod-qca-mcs \
+		+PACKAGE_kmod-bonding:kmod-bonding \
+		+PACKAGE_kmod-vxlan:kmod-vxlan \
+		+PACKAGE_kmod-nat46:kmod-nat46 \
+		+PACKAGE_kmod-ppp:kmod-ppp \
+		+PACKAGE_kmod-pppoe:kmod-pppoe \
+		+PACKAGE_kmod-pptp:kmod-pptp \
+		+PACKAGE_kmod-pppol2tp:kmod-pppol2tp
   TITLE:=QCA NSS Enhanced Connection Manager (ECM)
   FILES:=$(PKG_BUILD_DIR)/ecm.ko
   KCONFIG:=CONFIG_NF_CONNTRACK_DSCPREMARK_EXT=y
@@ -67,16 +67,17 @@ define KernelPackage/qca-nss-ecm/install
 endef
 
 EXTRA_CFLAGS+= \
-		 -I$(STAGING_DIR)/usr/include/qca-nss-drv \
-		 -I$(STAGING_DIR)/usr/include/qca-mcs \
-		 -I$(STAGING_DIR)/usr/include/nat46
+	-I$(STAGING_DIR)/usr/include/qca-nss-drv \
+	-I$(STAGING_DIR)/usr/include/qca-mcs \
+	-I$(STAGING_DIR)/usr/include/nat46
 
 ifneq (, $(findstring $(CONFIG_TARGET_BOARD), "qualcommax" "ipq60xx"))
-ECM_MAKE_OPTS+= ECM_NON_PORTED_SUPPORT_ENABLE=y \
-			   ECM_INTERFACE_VLAN_ENABLE=y \
-			   ECM_CLASSIFIER_MARK_ENABLE=y \
-			   ECM_CLASSIFIER_DSCP_ENABLE=y \
-			   ECM_CLASSIFIER_PCC_ENABLE=n
+ECM_MAKE_OPTS+= \
+	ECM_NON_PORTED_SUPPORT_ENABLE=y \
+	ECM_INTERFACE_VLAN_ENABLE=y \
+	ECM_CLASSIFIER_MARK_ENABLE=y \
+	ECM_CLASSIFIER_DSCP_ENABLE=y \
+	ECM_CLASSIFIER_PCC_ENABLE=n
 endif
 
 ifneq ($(CONFIG_PACKAGE_kmod-qca-nss-drv),)
@@ -102,8 +103,9 @@ ECM_MAKE_OPTS+=ECM_INTERFACE_VXLAN_ENABLE=y
 endif
 
 ifneq ($(CONFIG_PACKAGE_kmod-qca-ovsmgr),)
-ECM_MAKE_OPTS+=ECM_INTERFACE_OVS_BRIDGE_ENABLE=y \
-			   ECM_CLASSIFIER_OVS_ENABLE=y
+ECM_MAKE_OPTS+= \
+	ECM_INTERFACE_OVS_BRIDGE_ENABLE=y \
+	ECM_CLASSIFIER_OVS_ENABLE=y
 EXTRA_CFLAGS+= -I$(STAGING_DIR)/usr/include/qca-ovsmgr
 endif
 
@@ -119,18 +121,24 @@ ifneq ($(CONFIG_PACKAGE_kmod-nat46),)
 ECM_MAKE_OPTS+=ECM_INTERFACE_MAP_T_ENABLE=y
 endif
 
-# NSS IPsec support is disabled in qca-nss-drv for qualcommax/6.18, so do not
-# enable ECM's NSS IPsec glue based on the generic kernel IPsec package.
+# NSS IPsec is intentionally disabled until the matching qualcommax client
+# package is available.
 ECM_MAKE_OPTS+=ECM_INTERFACE_IPSEC_ENABLE=n
 
 ifneq ($(CONFIG_PACKAGE_kmod-pppoe),)
-ECM_MAKE_OPTS+=ECM_INTERFACE_PPPOE_ENABLE=y \
-			   ECM_INTERFACE_PPTP_ENABLE=y \
-			   ECM_INTERFACE_PPP_ENABLE=y
+ECM_MAKE_OPTS+= \
+	ECM_INTERFACE_PPPOE_ENABLE=y \
+	ECM_INTERFACE_PPP_ENABLE=y
 else
-ECM_MAKE_OPTS+=ECM_INTERFACE_PPPOE_ENABLE=n \
-			   ECM_INTERFACE_PPTP_ENABLE=n \
-			   ECM_INTERFACE_PPP_ENABLE=n
+ECM_MAKE_OPTS+= \
+	ECM_INTERFACE_PPPOE_ENABLE=n \
+	ECM_INTERFACE_PPP_ENABLE=n
+endif
+
+ifneq ($(CONFIG_PACKAGE_kmod-pptp),)
+ECM_MAKE_OPTS+=ECM_INTERFACE_PPTP_ENABLE=y
+else
+ECM_MAKE_OPTS+=ECM_INTERFACE_PPTP_ENABLE=n
 endif
 
 ifneq ($(CONFIG_PACKAGE_kmod-pppol2tp),)
@@ -140,8 +148,9 @@ ECM_MAKE_OPTS+=ECM_INTERFACE_L2TPV2_ENABLE=n
 endif
 
 ifneq ($(CONFIG_PACKAGE_kmod-gre)$(CONFIG_PACKAGE_kmod-gre6),)
-ECM_MAKE_OPTS+=ECM_INTERFACE_GRE_TAP_ENABLE=y \
-			   ECM_INTERFACE_GRE_TUN_ENABLE=y
+ECM_MAKE_OPTS+= \
+	ECM_INTERFACE_GRE_TAP_ENABLE=y \
+	ECM_INTERFACE_GRE_TUN_ENABLE=y
 endif
 
 ifneq ($(CONFIG_PACKAGE_kmod-sit),)
@@ -165,7 +174,7 @@ EXTRA_CFLAGS+=-DNSS_FIRMWARE_VERSION_12_5
 endif
 
 define Build/InstallDev
-	mkdir -p $(1)/usr/include/qca-nss-ecm
+	$(INSTALL_DIR) $(1)/usr/include/qca-nss-ecm
 	$(CP) $(PKG_BUILD_DIR)/exports/* $(1)/usr/include/qca-nss-ecm
 endef
 

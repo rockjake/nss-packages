@@ -23,7 +23,7 @@
 - * echo ath0 > /proc/sys/nss/ppe_vp/create => Here 6 can be ignored.
 + * echo ath0 > /proc/sys/dev/nss/ppe_vp/create => Here 6 can be ignored.
   */
- static nss_if_num_t nss_ppe_vp_parse_vp_cmd(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
+ static nss_if_num_t nss_ppe_vp_parse_vp_cmd(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int32_t if_num;
  	struct net_device *dev;

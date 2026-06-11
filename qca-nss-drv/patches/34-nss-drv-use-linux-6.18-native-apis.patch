@@ -1,0 +1,512 @@
+--- a/nss_init.c
++++ b/nss_init.c
+@@ -589,54 +589,9 @@ static struct ctl_table nss_general_tabl
+ 	}
+ };
+ 
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-static struct ctl_table nss_init_dir[] = {
+-#if (NSS_FREQ_SCALE_SUPPORT == 1)
+-	{
+-		.procname               = "clock",
+-		.mode                   = 0555,
+-		.child                  = nss_freq_table,
+-	},
+-#endif
+-	{
+-		.procname               = "general",
+-		.mode                   = 0555,
+-		.child                  = nss_general_table,
+-	},
+-#if (NSS_SKB_REUSE_SUPPORT == 1)
+-	{
+-		.procname               = "skb_reuse",
+-		.mode                   = 0555,
+-		.child                  = nss_skb_reuse_table,
+-	},
+-#endif
+-	{ }
+-};
+-
+-static struct ctl_table nss_root_dir[] = {
+-	{
+-		.procname		= "nss",
+-		.mode			= 0555,
+-		.child			= nss_init_dir,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_root[] = {
+-	{
+-		.procname		= "dev",
+-		.mode			= 0555,
+-		.child			= nss_root_dir,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table_header *nss_dev_header;
+-#else
+ static struct ctl_table_header *nss_clk_hdr;
+ static struct ctl_table_header *nss_gen_hdr;
+ static struct ctl_table_header *nss_skb_hdr;
+-#endif
+ 
+ /*
+  * nss_init()
+@@ -654,11 +609,7 @@ static int __init nss_init(void)
+ #endif
+ 
+ #if defined(NSS_DRV_POINT_OFFLOAD)
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-	pof = of_find_node_by_name(NULL, "reg_update");
+-#else
+ 	pof = of_find_node_by_name(NULL, "reg-update");
+-#endif
+ 	if ((!pof) || (!of_property_read_bool(pof, "ubi_core_enable"))) {
+ 		nss_info_always("UBI is not enabled. Disable qca-nss-drv\n");
+ 		return 0;
+@@ -789,16 +740,9 @@ nss_info("Init NSS driver");
+ 	 */
+ 	nss_strings_init();
+ 
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-	/*
+-	 * Register sysctl table.
+-	 */
+-	nss_dev_header = register_sysctl_table(nss_root);
+-#else
+ 	nss_clk_hdr = register_sysctl("dev/nss/clock", nss_freq_table);
+ 	nss_gen_hdr = register_sysctl("dev/nss/general", nss_general_table);
+ 	nss_skb_hdr = register_sysctl("dev/nss/skb_reuse", nss_skb_reuse_table);
+-#endif
+ 	/*
+ 	 * Registering sysctl for ipv4/6 specific config.
+ 	 */
+@@ -960,10 +904,6 @@ static void __exit nss_cleanup(void)
+ {
+ 	nss_info("Exit NSS driver");
+ 
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-	if (nss_dev_header)
+-		unregister_sysctl_table(nss_dev_header);
+-#else
+ 	if (nss_clk_hdr)
+ 		unregister_sysctl_table(nss_clk_hdr);
+ 
+@@ -972,7 +912,6 @@ static void __exit nss_cleanup(void)
+ 
+ 	if (nss_skb_hdr)
+ 		unregister_sysctl_table(nss_skb_hdr);
+-#endif
+ 	/*
+ 	 * Unregister n2h specific sysctl
+ 	 */
+@@ -1034,5 +973,6 @@ module_init(nss_init);
+ module_exit(nss_cleanup);
+ 
+ MODULE_DESCRIPTION("QCA NSS Driver");
++MODULE_INFO(description, "QCA NSS Driver");
+ MODULE_AUTHOR("Qualcomm Atheros Inc");
+ MODULE_LICENSE("Dual BSD/GPL");
+--- a/nss_crypto_cmn_stats.c
++++ b/nss_crypto_cmn_stats.c
+@@ -17,6 +17,8 @@
+  **************************************************************************
+  */
+ 
++#include <linux/vmalloc.h>
++
+ #include "nss_core.h"
+ #include "nss_crypto_cmn_stats.h"
+ #include "nss_crypto_cmn_strings.h"
+--- a/nss_dma_stats.c
++++ b/nss_dma_stats.c
+@@ -17,6 +17,8 @@
+  **************************************************************************
+  */
+ 
++#include <linux/vmalloc.h>
++
+ #include "nss_core.h"
+ #include "nss_dma.h"
+ #include "nss_dma_stats.h"
+--- a/nss_dtls_cmn_stats.c
++++ b/nss_dtls_cmn_stats.c
+@@ -17,6 +17,8 @@
+  ***************************************************************************
+  */
+ 
++#include <linux/vmalloc.h>
++
+ #include "nss_core.h"
+ #include "nss_dtls_cmn.h"
+ #include "nss_dtls_cmn_stats.h"
+--- a/nss_ipsec_cmn_stats.c
++++ b/nss_ipsec_cmn_stats.c
+@@ -17,6 +17,8 @@
+  ***************************************************************************
+  */
+ 
++#include <linux/vmalloc.h>
++
+ #include "nss_core.h"
+ #include "nss_ipsec_cmn.h"
+ #include "nss_ipsec_cmn_stats.h"
+--- a/nss_mirror_stats.c
++++ b/nss_mirror_stats.c
+@@ -17,6 +17,8 @@
+  **************************************************************************
+  */
+ 
++#include <linux/vmalloc.h>
++
+ #include "nss_stats.h"
+ #include "nss_core.h"
+ #include "nss_mirror.h"
+--- a/nss_ppe_vp.c
++++ b/nss_ppe_vp.c
+@@ -20,6 +20,8 @@
+  * Header file for qca-ssdk APIs
+  */
+ #include <ref/ref_vsi.h>
++#include <linux/vmalloc.h>
++
+ 
+ #include "nss_ppe_vp.h"
+ #include "nss_ppe_vp_stats.h"
+--- a/nss_qvpn_stats.c
++++ b/nss_qvpn_stats.c
+@@ -17,6 +17,8 @@
+  **************************************************************************
+  */
+ 
++#include <linux/vmalloc.h>
++
+ #include "nss_core.h"
+ #include <nss_qvpn.h>
+ #include "nss_qvpn_stats.h"
+--- a/nss_tls_stats.c
++++ b/nss_tls_stats.c
+@@ -17,6 +17,8 @@
+  ******************************************************************************
+  */
+ 
++#include <linux/vmalloc.h>
++
+ #include "nss_core.h"
+ #include "nss_tls.h"
+ #include "nss_tls_stats.h"
+--- a/nss_n2h.c
++++ b/nss_n2h.c
+@@ -1902,37 +1902,6 @@ static struct ctl_table nss_n2h_table_mu
+ };
+ 
+ 
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-/*
+- * This table will be overwritten during single-core registration
+- */
+-static struct ctl_table nss_n2h_dir[] = {
+-	{
+-		.procname		= "n2hcfg",
+-		.mode			= 0555,
+-		.child			= nss_n2h_table_multi_core,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_n2h_root_dir[] = {
+-	{
+-		.procname		= "nss",
+-		.mode			= 0555,
+-		.child			= nss_n2h_dir,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_n2h_root[] = {
+-	{
+-		.procname		= "dev",
+-		.mode			= 0555,
+-		.child			= nss_n2h_root_dir,
+-	},
+-	{ }
+-};
+-#endif
+ 
+ static struct ctl_table_header *nss_n2h_header;
+ /*
+@@ -2281,12 +2250,7 @@ void nss_n2h_single_core_register_sysctl
+ 	/*
+ 	 * Register sysctl table.
+ 	 */
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-	nss_n2h_dir[0].child = nss_n2h_table_single_core;
+-	nss_n2h_header = register_sysctl_table(nss_n2h_root);
+-#else
+ 	nss_n2h_header = register_sysctl("dev/nss/n2hcfg", nss_n2h_table_single_core);
+-#endif
+ }
+ 
+ /*
+@@ -2385,11 +2349,7 @@ void nss_n2h_multi_core_register_sysctl(
+ 	 * Register sysctl table.
+ 	 */
+ 
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-	nss_n2h_header = register_sysctl_table(nss_n2h_root);
+-#else
+ 	nss_n2h_header = register_sysctl("dev/nss/n2hcfg", nss_n2h_table_multi_core);
+-#endif
+ }
+ 
+ /*
+--- a/nss_dma.c
++++ b/nss_dma.c
+@@ -378,35 +378,6 @@ static struct ctl_table nss_dma_table[]
+ 	}
+ };
+ 
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-static struct ctl_table nss_dma_dir[] = {
+-	{
+-		.procname		= "dma",
+-		.mode			= 0555,
+-		.child			= nss_dma_table,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_dma_root_dir[] = {
+-	{
+-		.procname		= "nss",
+-		.mode			= 0555,
+-		.child			= nss_dma_dir,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_dma_root[] = {
+-	{
+-		.procname		= "dev",
+-		.mode			= 0555,
+-		.child			= nss_dma_root_dir,
+-	},
+-	{ }
+-};
+-#endif
+-
+ static struct ctl_table_header *nss_dma_header;
+ 
+ /*
+@@ -424,11 +395,7 @@ void nss_dma_register_sysctl(void)
+ 	/*
+ 	 * Register sysctl table.
+ 	 */
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-	nss_dma_header = register_sysctl_table(nss_dma_root);
+-#else
+ 	nss_dma_header = register_sysctl("dev/nss/dma", nss_dma_table);
+-#endif
+ }
+ 
+ /*
+--- a/nss_rps.c
++++ b/nss_rps.c
+@@ -575,34 +575,6 @@ static struct ctl_table nss_rps_table[]
+ };
+ 
+ 
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-static struct ctl_table nss_rps_dir[] = {
+-	{
+-		.procname		= "rps",
+-		.mode			= 0555,
+-		.child			= nss_rps_table,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_rps_root_dir[] = {
+-	{
+-		.procname		= "nss",
+-		.mode			= 0555,
+-		.child			= nss_rps_dir,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_rps_root[] = {
+-	{
+-		.procname		= "dev",
+-		.mode			= 0555,
+-		.child			= nss_rps_root_dir,
+-	},
+-	{ }
+-};
+-#endif
+ 
+ static struct ctl_table_header *nss_rps_header;
+ 
+@@ -640,11 +612,7 @@ void nss_rps_register_sysctl(void)
+ 	/*
+ 	 * Register sysctl table.
+ 	 */
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-	nss_rps_header = register_sysctl_table(nss_rps_root);
+-#else
+ 	nss_rps_header = register_sysctl("dev/nss/rps", nss_rps_table);
+-#endif
+ }
+ 
+ /*
+--- a/nss_stats.c
++++ b/nss_stats.c
+@@ -87,35 +87,6 @@ static struct ctl_table nss_stats_table[
+ 	}
+ };
+ 
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-static struct ctl_table nss_stats_dir[] = {
+-	{
+-		.procname		= "stats",
+-		.mode			= 0555,
+-		.child			= nss_stats_table,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_stats_root_dir[] = {
+-	{
+-		.procname		= "nss",
+-		.mode			= 0555,
+-		.child			= nss_stats_dir,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_stats_root[] = {
+-	{
+-		.procname		= "dev",
+-		.mode			= 0555,
+-		.child			= nss_stats_root_dir,
+-	},
+-	{ }
+-};
+-#endif
+-
+ static struct ctl_table_header *nss_stats_header;
+ 
+ /*
+@@ -127,11 +98,7 @@ void nss_stats_register_sysctl(void)
+ 	/*
+ 	 * Register sysctl table.
+ 	 */
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-	nss_stats_header = register_sysctl_table(nss_stats_root);
+-#else
+ 	nss_stats_header = register_sysctl("dev/nss/stats", nss_stats_table);
+-#endif
+ }
+ 
+ /*
+--- a/nss_project.c
++++ b/nss_project.c
+@@ -335,35 +335,6 @@ static struct ctl_table nss_project_tabl
+ 	}
+ };
+ 
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-static struct ctl_table nss_project_dir[] = {
+-	{
+-		.procname		= "project",
+-		.mode			= 0555,
+-		.child			= nss_project_table,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_project_root_dir[] = {
+-	{
+-		.procname		= "nss",
+-		.mode			= 0555,
+-		.child			= nss_project_dir,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_project_root[] = {
+-	{
+-		.procname		= "dev",
+-		.mode			= 0555,
+-		.child			= nss_project_root_dir,
+-	},
+-	{ }
+-};
+-#endif
+-
+ static struct ctl_table_header *nss_project_header;
+ 
+ /*
+@@ -372,11 +343,7 @@ static struct ctl_table_header *nss_proj
+  */
+ void nss_project_register_sysctl(void)
+ {
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-	nss_project_header = register_sysctl_table(nss_project_root);
+-#else
+ 	nss_project_header = register_sysctl("dev/nss/project", nss_project_table);
+-#endif
+ }
+ 
+ /*
+--- a/nss_c2c_tx.c
++++ b/nss_c2c_tx.c
+@@ -330,35 +330,7 @@ static struct ctl_table nss_c2c_tx_table
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+ 		.proc_handler	= &nss_c2c_tx_performance_test_handler,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_c2c_tx_dir[] = {
+-	{
+-		.procname		= "c2c_tx",
+-		.mode			= 0555,
+-		.child			= nss_c2c_tx_table,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_c2c_tx_root_dir[] = {
+-	{
+-		.procname		= "nss",
+-		.mode			= 0555,
+-		.child			= nss_c2c_tx_dir,
+-	},
+-	{ }
+-};
+-
+-static struct ctl_table nss_c2c_tx_root[] = {
+-	{
+-		.procname		= "dev",
+-		.mode			= 0555,
+-		.child			= nss_c2c_tx_root_dir,
+-	},
+-	{ }
++	}
+ };
+ 
+ static struct ctl_table_header *nss_c2c_tx_header;
+@@ -378,7 +350,7 @@ void nss_c2c_tx_register_sysctl(void)
+ 	/*
+ 	 * Register sysctl table.
+ 	 */
+-	nss_c2c_tx_header = register_sysctl_table(nss_c2c_tx_root);
++	nss_c2c_tx_header = register_sysctl("dev/nss/c2c_tx", nss_c2c_tx_table);
+ }
+ 
+ /*

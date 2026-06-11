@@ -104,12 +104,12 @@ int main ( int argc, char **argp)
   }
 
   /*Copy the file name from command line arg*/
-  if (strlcpy (sourceFileName, argp[1], sizeof(sourceFileName)) >= sizeof(sourceFileName)) {
+  if (snprintf(sourceFileName, sizeof(sourceFileName), "%s", argp[1]) >= (int)sizeof(sourceFileName)) {
     fprintf (stderr, "Filename: %s too long \n", argp[1]);
     return (101);
   }
   /*Copy the interface name from command line arg*/
-  strlcpy (devname, argp[2], sizeof(devname));
+  snprintf(devname, sizeof(devname), "%s", argp[2]);
   /*Get PHY Address from command line arg*/
   PHY_ID = (unsigned int)strtoul(argp[3], NULL, 0);
 

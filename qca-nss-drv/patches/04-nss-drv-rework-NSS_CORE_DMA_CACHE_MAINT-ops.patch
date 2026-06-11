@@ -430,7 +430,7 @@ Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
  #ifdef CONFIG_DEBUG_KMEMLEAK
 --- a/nss_core.h
 +++ b/nss_core.h
-@@ -108,9 +108,22 @@
+@@ -108,37 +108,31 @@
  
  /*
   * Cache operation
@@ -454,10 +454,11 @@ Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
 +#define h2n_hlos_index_to_dma(_if_map_addr, _index) (_if_map_addr) + h2n_hlos_index_offset + (sizeof(uint32_t) * (_index))
 +#define n2h_hlos_index_to_dma(_if_map_addr, _index) (_if_map_addr) + n2h_hlos_index_offset + (sizeof(uint32_t) * (_index))
  
- #if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
- #define nss_ioremap ioremap_nocache
-@@ -119,26 +132,11 @@
- #endif
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+-#define nss_ioremap ioremap_nocache
+-#else
+ #define nss_ioremap ioremap
+-#endif
  
  /*
 - * nss_core_dma_cache_maint()

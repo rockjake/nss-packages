@@ -49,7 +49,7 @@
  	}
  
 -	memcpy(dev->dev_addr, addr->sa_data, ETH_ALEN);
-+	memcpy((void *) dev->dev_addr, addr->sa_data, ETH_ALEN);
++	eth_hw_addr_set(dev, addr->sa_data);
  	return 0;
  }
  
@@ -87,7 +87,7 @@
  
 --- a/nss_qdisc/igs/nss_mirred.c
 +++ b/nss_qdisc/igs/nss_mirred.c
-@@ -317,7 +317,7 @@ static int nss_mirred_act(struct sk_buff
+@@ -297,7 +297,7 @@ static int nss_mirred_act(struct sk_buff
  	 * Update the last use of action.
  	 */
  	tcf_lastuse_update(&act->tcf_tm);
@@ -98,7 +98,7 @@
  	retval = READ_ONCE(act->tcf_action);
 --- a/nss_qdisc/nss_qdisc.c
 +++ b/nss_qdisc/nss_qdisc.c
-@@ -2189,7 +2189,7 @@ int __nss_qdisc_init(struct Qdisc *sch,
+@@ -2185,7 +2185,7 @@ int __nss_qdisc_init(struct Qdisc *sch,
  	 * This is to prevent mixing NSS and PPE qdisc with linux qdisc.
  	 */
  	if ((parent != TC_H_ROOT) && (root->ops->owner != THIS_MODULE)) {
@@ -107,22 +107,24 @@
  			" or the interface is currently down", nq->qdisc, nq->type);
  	}
  
-@@ -2606,12 +2606,14 @@ int nss_qdisc_init(struct Qdisc *sch, st
+@@ -2602,15 +2602,9 @@ int nss_qdisc_init(struct Qdisc *sch, st
   *  Wrapper around gnet_stats_copy_basic()
   */
  int nss_qdisc_gnet_stats_copy_basic(struct Qdisc *sch, struct gnet_dump *d,
 -				struct gnet_stats_basic_packed *b)
 +				struct gnet_stats_basic_sync *b)
  {
- #if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 18, 0))
- 	return gnet_stats_copy_basic(d, b);
- #elif (LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0))
- 	return gnet_stats_copy_basic(d, NULL, b);
-+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 16, 0))
+-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 18, 0))
+-	return gnet_stats_copy_basic(d, b);
+-#elif (LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0))
+-	return gnet_stats_copy_basic(d, NULL, b);
+-#else
+-	return gnet_stats_copy_basic(qdisc_root_sleeping_running(sch), d, NULL, b);
+-#endif
 +	return gnet_stats_copy_basic(d, NULL, b, true);
- #else
- 	return gnet_stats_copy_basic(qdisc_root_sleeping_running(sch), d, NULL, b);
- #endif
+ }
+ 
+ /*
 --- a/nss_qdisc/nss_qdisc.h
 +++ b/nss_qdisc/nss_qdisc.h
 @@ -217,7 +217,7 @@ struct nss_qdisc {

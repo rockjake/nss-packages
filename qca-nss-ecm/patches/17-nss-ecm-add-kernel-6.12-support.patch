@@ -1,90 +1,65 @@
 --- a/ecm_interface.c
 +++ b/ecm_interface.c
-@@ -1395,7 +1395,11 @@ __be32 ecm_interface_vxlan_gpe_get_vni_r
+@@ -1395,7 +1395,7 @@ __be32 ecm_interface_vxlan_gpe_get_vni_r
  		__be32 daddr;
  
  		daddr = netif_is_vxlan(indev) ? ip_hdr(skb)->saddr : ip_hdr(skb)->daddr;
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 18, 0)
- 		rt = ip_route_output(&init_net, daddr, 0, 0, 0);
-+#else
+-		rt = ip_route_output(&init_net, daddr, 0, 0, 0);
 +		rt = ip_route_output(&init_net, daddr, 0, 0, 0, RT_SCOPE_UNIVERSE);
-+#endif
  		if (IS_ERR_OR_NULL(rt)) {
  			DEBUG_WARN("%px: VXLAN-GPE failed to get IPv4 route to: %pI4\n", dev, &daddr);
  			goto rt_error;
-@@ -1718,7 +1722,11 @@ struct neighbour *ecm_interface_ipv4_nei
+@@ -1718,7 +1718,7 @@ struct neighbour *ecm_interface_ipv4_nei
  	__be32 ipv4_addr;
  
  	ECM_IP_ADDR_TO_NIN4_ADDR(ipv4_addr, addr);
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 18, 0)
- 	rt = ip_route_output(&init_net, ipv4_addr, 0, 0, 0);
-+#else
+-	rt = ip_route_output(&init_net, ipv4_addr, 0, 0, 0);
 +	rt = ip_route_output(&init_net, ipv4_addr, 0, 0, 0, RT_SCOPE_UNIVERSE);
-+#endif
  	if (IS_ERR_OR_NULL(rt)) {
  		return NULL;
  	}
-@@ -9213,8 +9221,13 @@ int ecm_interface_wifi_event_stop(void)
+@@ -9213,7 +9213,7 @@ int ecm_interface_wifi_event_stop(void)
   * ecm_interface_igs_enabled_handler()
   *	IGS enabled check sysctl node handler.
   */
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
- static int ecm_interface_igs_enabled_handler(struct ctl_table *ctl, int write, void __user *buffer,
- 		 size_t *lenp, loff_t *ppos)
-+#else
+-static int ecm_interface_igs_enabled_handler(struct ctl_table *ctl, int write, void __user *buffer,
 +static int ecm_interface_igs_enabled_handler(const struct ctl_table *ctl, int write, void __user *buffer,
-+		 size_t *lenp, loff_t *ppos)
-+#endif
+ 		 size_t *lenp, loff_t *ppos)
  {
  	int ret;
- 	int current_value;
-@@ -9254,7 +9267,11 @@ static int ecm_interface_igs_enabled_han
+@@ -9254,7 +9254,7 @@ static int ecm_interface_igs_enabled_han
   * ecm_interface_src_check_handler()
   *	Source interface check sysctl node handler.
   */
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
- static int ecm_interface_src_check_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+#else
+-static int ecm_interface_src_check_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
 +static int ecm_interface_src_check_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+#endif
  {
  	int ret;
  	int current_value;
-@@ -9295,7 +9312,11 @@ static int ecm_interface_src_check_handl
+@@ -9295,7 +9295,7 @@ static int ecm_interface_src_check_handl
   * ecm_interface_src_check_no_flush_handler()
   *	Source interface check no flush sysctl node handler.
   */
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
- static int ecm_interface_src_check_no_flush_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+#else
+-static int ecm_interface_src_check_no_flush_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
 +static int ecm_interface_src_check_no_flush_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+#endif
  {
  	int ret;
  
-@@ -9319,8 +9340,13 @@ static int ecm_interface_src_check_no_fl
+@@ -9319,7 +9319,7 @@ static int ecm_interface_src_check_no_fl
   * ecm_interface_mwan3_enable_handler()
   *	 mwan3 enable check sysctl node handler.
   */
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
- static int ecm_interface_mwan3_enable_handler(struct ctl_table *ctl, int write, void __user *buffer,
- 		 size_t *lenp, loff_t *ppos)
-+#else
+-static int ecm_interface_mwan3_enable_handler(struct ctl_table *ctl, int write, void __user *buffer,
 +static int ecm_interface_mwan3_enable_handler(const struct ctl_table *ctl, int write, void __user *buffer,
-+		 size_t *lenp, loff_t *ppos)
-+#endif
+ 		 size_t *lenp, loff_t *ppos)
  {
  	int ret;
- 	int current_value;
-@@ -9657,7 +9683,11 @@ static int ecm_interface_defunct_by_mac_
+@@ -9657,7 +9657,7 @@ static int ecm_interface_defunct_by_mac_
   * ecm_interface_defunct_by_mac_addr_handler()
   * 	Proc handler function for defunct the ecm rules by mac address
   */
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
- static int ecm_interface_defunct_by_mac_address_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#else
+-static int ecm_interface_defunct_by_mac_address_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
 +static int ecm_interface_defunct_by_mac_address_handler(const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#endif
  {
  	/*
  	 * To mark a MAC address as defunct:
@@ -292,27 +267,21 @@
  	ii->ae_interface_identifier = ae_interface_identifier;
 --- a/ecm_tracker_udp.c
 +++ b/ecm_tracker_udp.c
-@@ -1160,7 +1160,11 @@ static int ecm_tracker_rtp_payload_types
+@@ -1160,7 +1160,7 @@ static int ecm_tracker_rtp_payload_types
   * ecm_tracker_udp_rtp_payload_types_handler()
   *	Proc handler function for RTP payload types read/write operation.
   */
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
- static int ecm_tracker_udp_rtp_payload_types_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#else
+-static int ecm_tracker_udp_rtp_payload_types_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
 +static int ecm_tracker_udp_rtp_payload_types_handler(const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#endif
  {
  	/*
  	 * Usage:
-@@ -1180,7 +1184,11 @@ static int ecm_tracker_udp_rtp_payload_t
+@@ -1180,7 +1180,7 @@ static int ecm_tracker_udp_rtp_payload_t
   * ecm_tracker_udp_clf_enabled_handler()
   *	Sysctl to enable/disable UDP classifier flag.
   */
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
- int ecm_tracker_udp_clf_enabled_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#else
+-int ecm_tracker_udp_clf_enabled_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
 +int ecm_tracker_udp_clf_enabled_handler(const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#endif
  {
  	int ret;
  
@@ -326,41 +295,30 @@
  #include <linux/module.h>
  #include <linux/of.h>
  #include <linux/debugfs.h>
-@@ -947,7 +948,11 @@ int ecm_front_end_ppe_fse_enable_handler
+@@ -947,7 +948,7 @@ int ecm_front_end_ppe_fse_enable_handler
   * ecm_front_end_db_conn_limit_handler()
   *	Database connection limit sysctl node handler.
   */
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
- int ecm_front_end_db_conn_limit_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#else
+-int ecm_front_end_db_conn_limit_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
 +int ecm_front_end_db_conn_limit_handler(const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#endif
  {
  	int ret;
  	int current_value;
-@@ -1166,7 +1171,11 @@ static int ecm_front_end_denied_ports_ha
+@@ -1166,7 +1167,7 @@ static int ecm_front_end_denied_ports_ha
   * ecm_front_end_udp_denied_ports_handler()
   *	Proc handler function for UDP denied ports read/write operation.
   */
 -static int ecm_front_end_udp_denied_ports_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
-+int ecm_front_end_udp_denied_ports_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#else
 +int ecm_front_end_udp_denied_ports_handler(const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#endif
  {
  	/*
  	 * Usage:
-@@ -1186,7 +1195,11 @@ static int ecm_front_end_udp_denied_port
+@@ -1186,7 +1187,7 @@ static int ecm_front_end_udp_denied_port
   * ecm_front_end_tcp_denied_ports_handler()
   *	Proc handler function for TCP denied ports read/write operation.
   */
 -static int ecm_front_end_tcp_denied_ports_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
-+int ecm_front_end_tcp_denied_ports_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#else
 +int ecm_front_end_tcp_denied_ports_handler(const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+#endif
  {
  	/*
  	 * Usage:
@@ -376,31 +334,25 @@
  			DEBUG_TRACE("%px: VLAN - unsupported\n", feci);
 --- a/frontends/sfe/ecm_sfe_common.c
 +++ b/frontends/sfe/ecm_sfe_common.c
-@@ -347,7 +347,11 @@ void ecm_sfe_common_fast_xmit_set(uint32
+@@ -347,7 +347,7 @@ void ecm_sfe_common_fast_xmit_set(uint32
   * ecm_sfe_fast_xmit_enable_handler()
   *	Fast transmit sysctl node handler.
   */
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
- int ecm_sfe_fast_xmit_enable_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+#else
+-int ecm_sfe_fast_xmit_enable_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
 +int ecm_sfe_fast_xmit_enable_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+#endif
  {
  	int ret;
  
-@@ -371,7 +375,11 @@ int ecm_sfe_fast_xmit_enable_handler(str
+@@ -371,7 +371,7 @@ int ecm_sfe_fast_xmit_enable_handler(str
   * ecm_sfe_fse_enable_handler()
   *	Sysctl to enable/disable FSE programming through ECM SFE frontend.
   */
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
- int ecm_sfe_fse_enable_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+#else
+-int ecm_sfe_fse_enable_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
 +int ecm_sfe_fse_enable_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+#endif
  {
  	int ret;
  	int current_val;
-@@ -546,7 +554,7 @@ static struct ctl_table ecm_sfe_sysctl_t
+@@ -543,7 +543,7 @@ static struct ctl_table ecm_sfe_sysctl_t
   * ecm_sfe_sysctl_tbl_init()
   * 	Register sysctl for SFE
   */
@@ -495,30 +447,11 @@
  		goto sscanf_read_error;
 --- a/Makefile
 +++ b/Makefile
-@@ -567,4 +567,10 @@ endif
+@@ -567,4 +567,7 @@ endif
  
  ccflags-y += -Wall -Werror
  
-+# Kernel 6.12 compat headers
-+ccflags-y += -I$(obj)/compat
-+
 +# GCC 15+ has stricter checks for prototypes and declarations. Silence them
 +ccflags-y += -Wno-missing-prototypes -Wno-missing-declarations
 +
  obj ?= .
---- /dev/null
-+++ b/compat/asm/unaligned.h
-@@ -0,0 +1,13 @@
-+/* Compatibility header for <asm/unaligned.h> moved to <linux/unaligned.h> in kernel 6.10+ */
-+#ifndef _ASM_UNALIGNED_H
-+#define _ASM_UNALIGNED_H
-+
-+#include <linux/version.h>
-+
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,10,0)
-+#include <linux/unaligned.h>
-+#else
-+#include_next <asm/unaligned.h>
-+#endif
-+
-+#endif /* _ASM_UNALIGNED_H */

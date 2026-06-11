@@ -1,16 +1,14 @@
 --- a/nss_core.c
 +++ b/nss_core.c
-@@ -38,6 +38,9 @@
+@@ -38,6 +38,7 @@
  #endif
  #endif
  #include <linux/etherdevice.h>
-+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 10, 0))
 +#include <linux/skbuff_ref.h>
-+#endif
  #include "nss_tx_rx_common.h"
  
  #ifdef NSS_DATA_PLANE_GENERIC_SUPPORT
-@@ -50,26 +53,7 @@
+@@ -50,26 +51,7 @@
  #define NSS_CORE_JUMBO_LINEAR_BUF_SIZE 128
  
  #if (NSS_SKB_REUSE_SUPPORT == 1)
@@ -37,38 +35,21 @@
  #endif /* NSS_SKB_REUSE_SUPPORT */
  
  static int max_ipv4_conn = NSS_DEFAULT_NUM_CONN;
---- a/Makefile
-+++ b/Makefile
-@@ -630,6 +630,8 @@ qca-nss-drv-objs += \
- ccflags-y += -DNSS_FREQ_SCALE_SUPPORT=1
- endif
- 
-+ccflags-y += -include $(obj)/compat.h
-+
- ccflags-y += $(NSS_CCFLAGS)
- 
- export NSS_CCFLAGS
 --- a/nss_init.c
 +++ b/nss_init.c
-@@ -123,10 +123,17 @@ static inline int nss_probe(struct platf
+@@ -123,9 +123,9 @@ static inline int nss_probe(struct platf
   * nss_remove()
   *	HLOS device remove callback
   */
-+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0))
- static inline int nss_remove(struct platform_device *nss_dev)
- {
- 	return nss_hal_remove(nss_dev);
- }
-+#else
+-static inline int nss_remove(struct platform_device *nss_dev)
 +static inline void nss_remove(struct platform_device *nss_dev)
-+{
+ {
+-	return nss_hal_remove(nss_dev);
 +	nss_hal_remove(nss_dev);
-+}
-+#endif
+ }
  
  #if (NSS_DT_SUPPORT == 1)
- /*
-@@ -136,7 +143,6 @@ struct of_device_id nss_dt_ids[] = {
+@@ -136,7 +136,6 @@ struct of_device_id nss_dt_ids[] = {
  	{ .compatible = "qcom,nss" },
  	{ .compatible = "qcom,nss0" },
  	{ .compatible = "qcom,nss1" },
@@ -76,97 +57,97 @@
  };
  MODULE_DEVICE_TABLE(of, nss_dt_ids);
  #endif
-@@ -176,7 +182,7 @@ static void nss_reset_frequency_stats_sa
+@@ -176,7 +175,7 @@ static void nss_reset_frequency_stats_sa
   * nss_current_freq_handler()
   *	Handle Userspace Frequency Change Requests
   */
 -static int nss_current_freq_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_current_freq_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_current_freq_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int ret, i;
  
-@@ -236,7 +242,7 @@ static int nss_current_freq_handler(stru
+@@ -236,7 +235,7 @@ static int nss_current_freq_handler(stru
   * nss_auto_scale_handler()
   *	Enables or Disable Auto Scaling
   */
 -static int nss_auto_scale_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_auto_scale_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_auto_scale_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int ret;
  
-@@ -301,7 +307,7 @@ static int nss_auto_scale_handler(struct
+@@ -301,7 +300,7 @@ static int nss_auto_scale_handler(struct
   * nss_get_freq_table_handler()
   *	Display Support Freq and Ex how to Change.
   */
 -static int nss_get_freq_table_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_get_freq_table_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_get_freq_table_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int ret, i;
  
-@@ -330,7 +336,7 @@ static int nss_get_freq_table_handler(st
+@@ -330,7 +329,7 @@ static int nss_get_freq_table_handler(st
   * nss_get_average_inst_handler()
   *	Display AVG Inst Per Ms.
   */
 -static int nss_get_average_inst_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_get_average_inst_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_get_average_inst_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int ret;
  
-@@ -352,7 +358,7 @@ static int nss_get_average_inst_handler(
+@@ -352,7 +351,7 @@ static int nss_get_average_inst_handler(
   * nss_debug_handler()
   *	Enable NSS debug output
   */
 -static int nss_debug_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_debug_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_debug_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int ret;
  
-@@ -372,7 +378,7 @@ static int nss_debug_handler(struct ctl_
+@@ -372,7 +371,7 @@ static int nss_debug_handler(struct ctl_
   * nss_coredump_handler()
   *	Send Signal To Coredump NSS Cores
   */
 -static int nss_coredump_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_coredump_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_coredump_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_ctx_instance *nss_ctx = &nss_top_main.nss[NSS_CORE_0];
  	int ret;
-@@ -397,7 +403,7 @@ static int nss_coredump_handler(struct c
+@@ -397,7 +396,7 @@ static int nss_coredump_handler(struct c
   * nss_jumbo_mru_handler()
   *	Sysctl to modify nss_jumbo_mru
   */
 -static int nss_jumbo_mru_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_jumbo_mru_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_jumbo_mru_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int ret;
  
-@@ -418,7 +424,7 @@ static int nss_jumbo_mru_handler(struct
+@@ -418,7 +417,7 @@ static int nss_jumbo_mru_handler(struct
   *	Sysctl to modify nss_paged_mode.
   */
  
 -static int nss_paged_mode_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_paged_mode_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_paged_mode_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int ret;
  
-@@ -440,7 +446,7 @@ static int nss_paged_mode_handler(struct
+@@ -440,7 +439,7 @@ static int nss_paged_mode_handler(struct
   * nss_get_min_reuse_handler()
   *	Sysctl to get min reuse sizes
   */
 -static int nss_get_min_reuse_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_get_min_reuse_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_get_min_reuse_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int ret;
  	struct nss_ctx_instance *nss_ctx = NULL;
-@@ -467,7 +473,7 @@ static int nss_get_min_reuse_handler(str
+@@ -467,7 +466,7 @@ static int nss_get_min_reuse_handler(str
   * nss_max_reuse_handler()
   *	Sysctl to modify nss_max_reuse
   */
 -static int nss_max_reuse_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_max_reuse_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_max_reuse_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int ret;
  
-@@ -502,8 +508,7 @@ static struct ctl_table nss_skb_reuse_ta
+@@ -502,8 +501,7 @@ static struct ctl_table nss_skb_reuse_ta
  		.maxlen			= sizeof(int),
  		.mode			= 0644,
  		.proc_handler	= &nss_max_reuse_handler,
@@ -176,7 +157,7 @@
  };
  #endif
  
-@@ -539,8 +544,7 @@ static struct ctl_table nss_freq_table[]
+@@ -539,8 +537,7 @@ static struct ctl_table nss_freq_table[]
  		.maxlen			= sizeof(int),
  		.mode			= 0644,
  		.proc_handler	= &nss_get_average_inst_handler,
@@ -186,7 +167,7 @@
  };
  #endif
  
-@@ -588,8 +592,7 @@ static struct ctl_table nss_general_tabl
+@@ -588,8 +585,7 @@ static struct ctl_table nss_general_tabl
  		.maxlen                 = sizeof(int),
  		.mode                   = 0644,
  		.proc_handler           = &nss_paged_mode_handler,
@@ -203,7 +184,7 @@
   *	Handler to take nonzero stats print configuration.
   */
 -static int nss_stats_nonzero_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_stats_nonzero_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_stats_nonzero_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int ret;
  	ret = proc_dointvec(ctl, write, buffer, lenp, ppos);
@@ -246,55 +227,15 @@
  		}
 --- a/nss_tunipip6_stats.c
 +++ b/nss_tunipip6_stats.c
-@@ -17,6 +17,10 @@
+@@ -17,6 +17,8 @@
   **************************************************************************
   */
  
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 10, 0)
 +#include <linux/vmalloc.h>
-+#endif
 +
  #include "nss_core.h"
  #include "nss_tunipip6.h"
  #include "nss_stats.h"
---- /dev/null
-+++ b/compat.h
-@@ -0,0 +1,14 @@
-+// compat.h
-+#ifndef _COMPAT_H
-+#define _COMPAT_H
-+
-+#include <linux/version.h>
-+
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 10, 0)
-+#include <linux/vmalloc.h>
-+#define compat_const const
-+#else
-+#define compat_const
-+#endif
-+
-+#endif /* _COMPAT_H */
---- a/nss_c2c_tx.c
-+++ b/nss_c2c_tx.c
-@@ -284,7 +284,7 @@ EXPORT_SYMBOL(nss_c2c_tx_msg_init);
-  * nss_c2c_tx_performance_test_handler()
-  *	Handles the performance test.
-  */
--static int nss_c2c_tx_performance_test_handler(struct ctl_table *ctl, int write,
-+static int nss_c2c_tx_performance_test_handler(compat_const struct ctl_table *ctl, int write,
- 				void __user *buffer, size_t *lenp, loff_t *ppos)
- {
- 	struct nss_top_instance *nss_top = &nss_top_main;
-@@ -330,8 +330,7 @@ static struct ctl_table nss_c2c_tx_table
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
- 		.proc_handler	= &nss_c2c_tx_performance_test_handler,
--	},
--	{ }
-+	}
- };
- 
- static struct ctl_table_header *nss_c2c_tx_header;
 --- a/nss_dma.c
 +++ b/nss_dma.c
 @@ -285,7 +285,7 @@ EXPORT_SYMBOL(nss_dma_get_context);
@@ -302,7 +243,7 @@
   *	Handles the performance test.
   */
 -static int nss_dma_test_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_dma_test_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_dma_test_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_ctx_instance *nss_ctx = nss_dma_get_context();
  	int cur_state = test_cfg.run.val;
@@ -323,7 +264,7 @@
   *	Configure acceleration mode for IPv4
   */
 -static int nss_ipv4_accel_mode_cfg_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_ipv4_accel_mode_cfg_handler(compat_const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
++static int nss_ipv4_accel_mode_cfg_handler(const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
  	struct nss_ctx_instance *nss_ctx = &nss_top->nss[0];
@@ -332,7 +273,7 @@
   *	Sysctl handler for dscp/pri mappings.
   */
 -static int nss_ipv4_dscp_map_cfg_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_ipv4_dscp_map_cfg_handler(compat_const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
++static int nss_ipv4_dscp_map_cfg_handler(const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
  	struct nss_ctx_instance *nss_ctx = &nss_top->nss[0];
@@ -353,7 +294,7 @@
   *	Configure acceleration mode for IPv6
   */
 -static int nss_ipv6_accel_mode_cfg_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_ipv6_accel_mode_cfg_handler(compat_const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
++static int nss_ipv6_accel_mode_cfg_handler(const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
  	struct nss_ctx_instance *nss_ctx = &nss_top->nss[0];
@@ -362,7 +303,7 @@
   *	Sysctl handler for dscp/pri mappings.
   */
 -static int nss_ipv6_dscp_map_cfg_handler(struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_ipv6_dscp_map_cfg_handler(compat_const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
++static int nss_ipv6_dscp_map_cfg_handler(const struct ctl_table *ctl, int write, void *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
  	struct nss_ctx_instance *nss_ctx = &nss_top->nss[0];
@@ -383,7 +324,7 @@
   *	Enable NSS debug output
   */
 -int nss_logbuffer_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+int nss_logbuffer_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++int nss_logbuffer_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int ret;
  	int core_status;
@@ -394,7 +335,7 @@
   *	Sets empty pool buffer
   */
 -static int nss_n2h_set_empty_buf_pool(struct ctl_table *ctl, int write,
-+static int nss_n2h_set_empty_buf_pool(compat_const struct ctl_table *ctl, int write,
++static int nss_n2h_set_empty_buf_pool(const struct ctl_table *ctl, int write,
  				void __user *buffer,
  				size_t *lenp, loff_t *ppos,
  				nss_ptr_t core_num, int *new_val)
@@ -403,7 +344,7 @@
   *	Sets empty paged pool buffer
   */
 -static int nss_n2h_set_empty_paged_pool_buf(struct ctl_table *ctl, int write,
-+static int nss_n2h_set_empty_paged_pool_buf(compat_const struct ctl_table *ctl, int write,
++static int nss_n2h_set_empty_paged_pool_buf(const struct ctl_table *ctl, int write,
  				void __user *buffer,
  				size_t *lenp, loff_t *ppos,
  				nss_ptr_t core_num, int *new_val)
@@ -412,7 +353,7 @@
   *	Sets water mark for N2H SOS
   */
 -static int nss_n2h_set_water_mark(struct ctl_table *ctl, int write,
-+static int nss_n2h_set_water_mark(compat_const struct ctl_table *ctl, int write,
++static int nss_n2h_set_water_mark(const struct ctl_table *ctl, int write,
  					void __user *buffer,
  					size_t *lenp, loff_t *ppos,
  					uint32_t core_num, int *low, int *high)
@@ -421,7 +362,7 @@
   *	Sets water mark for paged pool N2H SOS
   */
 -static int nss_n2h_set_paged_water_mark(struct ctl_table *ctl, int write,
-+static int nss_n2h_set_paged_water_mark(compat_const struct ctl_table *ctl, int write,
++static int nss_n2h_set_paged_water_mark(const struct ctl_table *ctl, int write,
  					void __user *buffer,
  					size_t *lenp, loff_t *ppos,
  					uint32_t core_num, int *low, int *high)
@@ -430,7 +371,7 @@
   *	Sets number of wifi payloads to adjust high water mark for N2H SoS
   */
 -static int nss_n2h_cfg_wifi_pool(struct ctl_table *ctl, int write,
-+static int nss_n2h_cfg_wifi_pool(compat_const struct ctl_table *ctl, int write,
++static int nss_n2h_cfg_wifi_pool(const struct ctl_table *ctl, int write,
  					void __user *buffer,
  					size_t *lenp, loff_t *ppos,
  					int *payloads)
@@ -439,7 +380,7 @@
   *	Sets the number of empty buffer for core 1
   */
 -static int nss_n2h_empty_pool_buf_cfg_core1_handler(struct ctl_table *ctl,
-+static int nss_n2h_empty_pool_buf_cfg_core1_handler(compat_const struct ctl_table *ctl,
++static int nss_n2h_empty_pool_buf_cfg_core1_handler(const struct ctl_table *ctl,
  				int write, void __user *buffer,
  				size_t *lenp, loff_t *ppos)
  {
@@ -448,7 +389,7 @@
   *	Sets the number of empty buffer for core 0
   */
 -static int nss_n2h_empty_pool_buf_cfg_core0_handler(struct ctl_table *ctl,
-+static int nss_n2h_empty_pool_buf_cfg_core0_handler(compat_const struct ctl_table *ctl,
++static int nss_n2h_empty_pool_buf_cfg_core0_handler(const struct ctl_table *ctl,
  				int write, void __user *buffer,
  				size_t *lenp, loff_t *ppos)
  {
@@ -457,7 +398,7 @@
   *	Sets the number of empty paged buffer for core 1
   */
 -static int nss_n2h_empty_paged_pool_buf_cfg_core1_handler(struct ctl_table *ctl,
-+static int nss_n2h_empty_paged_pool_buf_cfg_core1_handler(compat_const struct ctl_table *ctl,
++static int nss_n2h_empty_paged_pool_buf_cfg_core1_handler(const struct ctl_table *ctl,
  				int write, void __user *buffer,
  				size_t *lenp, loff_t *ppos)
  {
@@ -466,7 +407,7 @@
   *	Sets the number of empty paged buffer for core 0
   */
 -static int nss_n2h_empty_paged_pool_buf_cfg_core0_handler(struct ctl_table *ctl,
-+static int nss_n2h_empty_paged_pool_buf_cfg_core0_handler(compat_const struct ctl_table *ctl,
++static int nss_n2h_empty_paged_pool_buf_cfg_core0_handler(const struct ctl_table *ctl,
  				int write, void __user *buffer,
  				size_t *lenp, loff_t *ppos)
  {
@@ -475,7 +416,7 @@
   *	Sets water mark for core 1
   */
 -static int nss_n2h_water_mark_core1_handler(struct ctl_table *ctl,
-+static int nss_n2h_water_mark_core1_handler(compat_const struct ctl_table *ctl,
++static int nss_n2h_water_mark_core1_handler(const struct ctl_table *ctl,
  			int write, void __user *buffer,
  			size_t *lenp, loff_t *ppos)
  {
@@ -484,7 +425,7 @@
   *	Sets water mark for core 0
   */
 -static int nss_n2h_water_mark_core0_handler(struct ctl_table *ctl,
-+static int nss_n2h_water_mark_core0_handler(compat_const struct ctl_table *ctl,
++static int nss_n2h_water_mark_core0_handler(const struct ctl_table *ctl,
  			int write, void __user *buffer,
  			size_t *lenp, loff_t *ppos)
  {
@@ -493,7 +434,7 @@
   *	Sets paged water mark for core 1
   */
 -static int nss_n2h_paged_water_mark_core1_handler(struct ctl_table *ctl,
-+static int nss_n2h_paged_water_mark_core1_handler(compat_const struct ctl_table *ctl,
++static int nss_n2h_paged_water_mark_core1_handler(const struct ctl_table *ctl,
  			int write, void __user *buffer,
  			size_t *lenp, loff_t *ppos)
  {
@@ -502,7 +443,7 @@
   *	Sets paged water mark for core 0
   */
 -static int nss_n2h_paged_water_mark_core0_handler(struct ctl_table *ctl,
-+static int nss_n2h_paged_water_mark_core0_handler(compat_const struct ctl_table *ctl,
++static int nss_n2h_paged_water_mark_core0_handler(const struct ctl_table *ctl,
  			int write, void __user *buffer,
  			size_t *lenp, loff_t *ppos)
  {
@@ -511,7 +452,7 @@
   *	Sets number of wifi payloads
   */
 -static int nss_n2h_wifi_payloads_handler(struct ctl_table *ctl,
-+static int nss_n2h_wifi_payloads_handler(compat_const struct ctl_table *ctl,
++static int nss_n2h_wifi_payloads_handler(const struct ctl_table *ctl,
  			int write, void __user *buffer,
  			size_t *lenp, loff_t *ppos)
  {
@@ -520,7 +461,7 @@
   *	Gets the QoS memory pool size
   */
 -static int nss_n2h_get_qos_mem_size_cfg_handler(struct ctl_table *ctl,
-+static int nss_n2h_get_qos_mem_size_cfg_handler(compat_const struct ctl_table *ctl,
++static int nss_n2h_get_qos_mem_size_cfg_handler(const struct ctl_table *ctl,
  			int write, void __user *buffer,
  			size_t *lenp, loff_t *ppos)
  {
@@ -529,7 +470,7 @@
   * Enable NSS MITIGATION
   */
 -static int nss_n2h_mitigationcfg_core0_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_n2h_mitigationcfg_core0_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_n2h_mitigationcfg_core0_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
  	struct nss_ctx_instance *nss_ctx = &nss_top->nss[NSS_CORE_0];
@@ -538,7 +479,7 @@
   * Enable NSS MITIGATION
   */
 -static int nss_n2h_mitigationcfg_core1_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_n2h_mitigationcfg_core1_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_n2h_mitigationcfg_core1_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
  	struct nss_ctx_instance *nss_ctx = &nss_top->nss[NSS_CORE_1];
@@ -547,7 +488,7 @@
   *	Add extra NSS bufs from host memory
   */
 -static int nss_n2h_buf_cfg_core0_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_n2h_buf_cfg_core0_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_n2h_buf_cfg_core0_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
  	struct nss_ctx_instance *nss_ctx = &nss_top->nss[NSS_CORE_0];
@@ -556,7 +497,7 @@
   *	Add extra NSS bufs from host memory
   */
 -static int nss_n2h_buf_cfg_core1_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_n2h_buf_cfg_core1_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_n2h_buf_cfg_core1_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
  	struct nss_ctx_instance *nss_ctx = &nss_top->nss[NSS_CORE_1];
@@ -565,7 +506,7 @@
   *	Sets the n2h queue size limit synchronously.
   */
 -static int nss_n2h_set_queue_limit_sync(struct ctl_table *ctl, int write, void __user *buffer,
-+static int nss_n2h_set_queue_limit_sync(compat_const struct ctl_table *ctl, int write, void __user *buffer,
++static int nss_n2h_set_queue_limit_sync(const struct ctl_table *ctl, int write, void __user *buffer,
  					size_t *lenp, loff_t *ppos, uint32_t core_id)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
@@ -574,7 +515,7 @@
   *	Sets the n2h queue size limit for core0
   */
 -static int nss_n2h_queue_limit_core0_handler(struct ctl_table *ctl,
-+static int nss_n2h_queue_limit_core0_handler(compat_const struct ctl_table *ctl,
++static int nss_n2h_queue_limit_core0_handler(const struct ctl_table *ctl,
  				int write, void __user *buffer,
  				size_t *lenp, loff_t *ppos)
  {
@@ -583,7 +524,7 @@
   *	Sets the n2h queue size limit for core1
   */
 -static int nss_n2h_queue_limit_core1_handler(struct ctl_table *ctl,
-+static int nss_n2h_queue_limit_core1_handler(compat_const struct ctl_table *ctl,
++static int nss_n2h_queue_limit_core1_handler(const struct ctl_table *ctl,
  				int write, void __user *buffer,
  				size_t *lenp, loff_t *ppos)
  {
@@ -592,7 +533,7 @@
   *	Enable n2h back pressure.
   */
 -static int nss_n2h_host_bp_cfg_handler(struct ctl_table *ctl, int write,
-+static int nss_n2h_host_bp_cfg_handler(compat_const struct ctl_table *ctl, int write,
++static int nss_n2h_host_bp_cfg_handler(const struct ctl_table *ctl, int write,
  				void __user *buffer, size_t *lenp, loff_t *ppos, uint32_t core_id)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
@@ -601,7 +542,7 @@
   *	Enable n2h back pressure in core 0.
   */
 -static int nss_n2h_host_bp_cfg_core0_handler(struct ctl_table *ctl, int write,
-+static int nss_n2h_host_bp_cfg_core0_handler(compat_const struct ctl_table *ctl, int write,
++static int nss_n2h_host_bp_cfg_core0_handler(const struct ctl_table *ctl, int write,
  				void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	return nss_n2h_host_bp_cfg_handler(ctl, write, buffer, lenp, ppos, NSS_CORE_0);
@@ -610,7 +551,7 @@
   *	Enable n2h back pressure in core 1.
   */
 -static int nss_n2h_host_bp_cfg_core1_handler(struct ctl_table *ctl, int write,
-+static int nss_n2h_host_bp_cfg_core1_handler(compat_const struct ctl_table *ctl, int write,
++static int nss_n2h_host_bp_cfg_core1_handler(const struct ctl_table *ctl, int write,
  				void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	return nss_n2h_host_bp_cfg_handler(ctl, write, buffer, lenp, ppos, NSS_CORE_1);
@@ -642,7 +583,7 @@
   * echo ath0 > /proc/sys/nss/ppe_vp/create => Here 6 can be ignored.
   */
 -static nss_if_num_t nss_ppe_vp_parse_vp_cmd(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static nss_if_num_t nss_ppe_vp_parse_vp_cmd(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static nss_if_num_t nss_ppe_vp_parse_vp_cmd(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int32_t if_num;
  	struct net_device *dev;
@@ -651,7 +592,7 @@
   *	PPE VP destroy handler.
   */
 -static int nss_ppe_vp_destroy_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_ppe_vp_destroy_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_ppe_vp_destroy_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_ctx_instance *nss_ctx = nss_ppe_vp_get_context();
  	int32_t if_num;
@@ -660,7 +601,7 @@
   *	PPE VP create handler.
   */
 -static int nss_ppe_vp_create_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+static int nss_ppe_vp_create_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++static int nss_ppe_vp_create_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int32_t if_num;
  	struct nss_ctx_instance *nss_ctx = nss_ppe_vp_get_context();
@@ -681,7 +622,7 @@
   *	Enable/disable pppoe bridge acceleration in NSS
   */
 -int nss_pppoe_br_accel_mode_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
-+int nss_pppoe_br_accel_mode_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
++int nss_pppoe_br_accel_mode_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_ctx_instance *nss_ctx = nss_pppoe_get_context();
  	struct nss_pppoe_msg npm;
@@ -702,7 +643,7 @@
   * thread stats enable messages containing the new value to each NSS core.
   */
 -static int nss_project_wt_stats_handler(struct ctl_table *ctl, int write,
-+static int nss_project_wt_stats_handler(compat_const struct ctl_table *ctl, int write,
++static int nss_project_wt_stats_handler(const struct ctl_table *ctl, int write,
  	void __user *buffer, size_t *lenp, loff_t *ppos)
  {
  	int ret;
@@ -723,7 +664,7 @@
   *	Enable NSS RPS.
   */
 -static int nss_rps_cfg_handler(struct ctl_table *ctl, int write,
-+static int nss_rps_cfg_handler(compat_const struct ctl_table *ctl, int write,
++static int nss_rps_cfg_handler(const struct ctl_table *ctl, int write,
  				void *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
@@ -732,7 +673,7 @@
   *	Configure NSS rps_hash_bitmap
   */
 -static int nss_rps_hash_bitmap_cfg_handler(struct ctl_table *ctl, int write,
-+static int nss_rps_hash_bitmap_cfg_handler(compat_const struct ctl_table *ctl, int write,
++static int nss_rps_hash_bitmap_cfg_handler(const struct ctl_table *ctl, int write,
  				void *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
@@ -741,7 +682,7 @@
   *	Configure NSS rps_pri_map
   */
 -static int nss_rps_pri_map_cfg_handler(struct ctl_table *ctl, int write,
-+static int nss_rps_pri_map_cfg_handler(compat_const struct ctl_table *ctl, int write,
++static int nss_rps_pri_map_cfg_handler(const struct ctl_table *ctl, int write,
  				void *buffer, size_t *lenp, loff_t *ppos)
  {
  	struct nss_top_instance *nss_top = &nss_top_main;
@@ -757,12 +698,12 @@
  
 --- a/nss_core.h
 +++ b/nss_core.h
-@@ -1036,7 +1036,7 @@ extern void nss_stats_clean(void);
+@@ -1032,7 +1032,7 @@ extern void nss_stats_clean(void);
   */
  extern void nss_log_init(void);
  extern bool nss_debug_log_buffer_alloc(uint8_t nss_id, uint32_t nentry);
 -extern int nss_logbuffer_handler(struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos);
-+extern int nss_logbuffer_handler(compat_const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos);
++extern int nss_logbuffer_handler(const struct ctl_table *ctl, int write, void __user *buffer, size_t *lenp, loff_t *ppos);
  
  /*
   * APIs to set jumbo_mru & paged_mode
@@ -773,7 +714,7 @@
   *	Sysctl handler for printing dscp/pri mapping.
   */
 -static int nss_dscp_map_print(struct ctl_table *ctl, void *buffer, size_t *lenp,
-+static int nss_dscp_map_print(compat_const struct ctl_table *ctl, void *buffer, size_t *lenp,
++static int nss_dscp_map_print(const struct ctl_table *ctl, void *buffer, size_t *lenp,
  				loff_t *ppos, struct nss_dscp_map_entry *mapping)
  {
  	char *r_buf;
@@ -782,7 +723,7 @@
   *	Sysctl handler for dscp/pri mappings.
   */
 -static int nss_dscp_map_parse(struct ctl_table *ctl, void *buffer, size_t *lenp,
-+static int nss_dscp_map_parse(compat_const struct ctl_table *ctl, void *buffer, size_t *lenp,
++static int nss_dscp_map_parse(const struct ctl_table *ctl, void *buffer, size_t *lenp,
  				loff_t *ppos, struct nss_dscp_map_parse *out)
  {
  	int count;
